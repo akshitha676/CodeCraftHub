@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeCraftHub Dashboard</title>
+
+<style>
+
+body{
+font-family: Arial, sans-serif;
+background:#f5f5f5;
+margin:0;
+padding:0;
+}
+
+header{
+background:#8B5CF6;
+color:white;
+padding:20px;
+text-align:center;
+}
+
+.container{
+width:90%;
+max-width:1000px;
+margin:auto;
+margin-top:20px;
+}
+
+form{
+background:white;
+padding:20px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+margin-bottom:20px;
+}
+
+input,textarea,select{
+width:100%;
+padding:10px;
+margin-top:8px;
+margin-bottom:12px;
+border:1px solid #ccc;
+border-radius:5px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+.add-btn{
+background:#F59E0B;
+color:white;
+}
+
+.edit-btn{
+background:#8B5CF6;
+color:white;
+}
+
+.delete-btn{
+background:#EF4444;
+color:white;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+th,td{
+padding:12px;
+border-bottom:1px solid #ddd;
+text-align:left;
+}
+
+th{
+background:#eee;
+}
+
+.message{
+margin-bottom:15px;
+padding:10px;
+border-radius:5px;
+}
+
+.success{
+background:#d1fae5;
+color:#065f46;
+}
+
+.error{
+background:#fee2e2;
+color:#991b1b;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>CodeCraftHub: Your Learning Management Platform</h1>
+</header>
+
+<div class="container">
+
+<div id="message"></div>
+
+<form id="courseForm">
+<h2>Add New Course</h2>
+
+<label>Name</label>
+<input type="text" id="name" required>
+
+<label>Description</label>
+<textarea id="description" required></textarea>
+
+<label>Target Date</label>
+<input type="date" id="target_date" required>
+
+<label>Status</label>
+<select id="status" required>
+<option value="Not Started">Not Started</option>
+<option value="In Progress">In Progress</option>
+<option value="Completed">Completed</option>
+</select>
+
+<button class="add-btn" type="submit">Add Course</button>
+
+</form>
+
+<h2>Course List</h2>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Description</th>
+<th>Target Date</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+</thead>
+
+<tbody id="courseTable">
+</tbody>
+
+</table>
+
+</div>
+
+<script>
+
+const API_URL="http://localhost:5000/api/courses"
+
+const form=document.getElementById("courseForm")
+const table=document.getElementById("courseTable")
+const message=document.getElementById("message")
+
+function showMessage(text,type){
+message.innerHTML=`<div class="message ${type}">${text}</div>`
+setTimeout(()=>{message.innerHTML=""},3000)
+}
+
+async function loadCourses(){
+
+table.innerHTML="Loading..."
+
+try{
+
+const res=await fetch(API_URL)
+const courses=await res.json()
+
+table.innerHTML=""
+
+courses.forEach(course=>{
+
+const row=document.createElement("tr")
+
+row.innerHTML=`
+
+<td>${course.id}</td>
+<td>${course.name}</td>
+<td>${course.description}</td>
+<td>${course.target_date}</td>
+<td>${course.status}</td>
+
+<td>
+
+<button class="edit-btn" onclick="editCourse(${course.id})">Edit</button>
+
+<button class="delete-btn" onclick="deleteCourse(${course.id})">Delete</button>
+
+</td>
+
+`
+
+table.appendChild(row)
+
+})
+
+}catch(err){
+
+showMessage("Error loading courses","error")
+
+}
+
+}
+
+form.addEventListener("submit",async(e)=>{
+
+e.preventDefault()
+
+const data={
+name:document.getElementById("name").value,
+description:document.getElementById("description").value,
+target_date:document.getElementById("target_date").value,
+status:document.getElementById("status").value
+}
+
+try{
+
+const res=await fetch(API_URL,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(data)
+})
+
+if(res.ok){
+
+showMessage("Course added successfully","success")
+form.reset()
+loadCourses()
+
+}else{
+
+showMessage("Failed to add course","error")
+
+}
+
+}catch(err){
+
+showMessage("Server error","error")
+
+}
+
+})
+
+async function deleteCourse(id){
+
+if(!confirm("Delete this course?")) return
+
+try{
+
+const res=await fetch(API_URL+"/"+id,{
+method:"DELETE"
+})
+
+if(res.ok){
+
+showMessage("Course deleted","success")
+loadCourses()
+
+}else{
+
+showMessage("Delete failed","error")
+
+}
+
+}catch(err){
+
+showMessage("Server error","error")
+
+}
+
+}
+
+async function editCourse(id){
+
+const name=prompt("Enter new course name")
+if(!name) return
+
+try{
+
+const res=await fetch(API_URL+"/"+id,{
+method:"PUT",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name:name})
+})
+
+if(res.ok){
+
+showMessage("Course updated","success")
+loadCourses()
+
+}else{
+
+showMessage("Update failed","error")
+
+}
+
+}catch(err){
+
+showMessage("Server error","error")
+
+}
+
+}
+
+loadCourses()
+
+</script>
+
+</body>
+</html>
